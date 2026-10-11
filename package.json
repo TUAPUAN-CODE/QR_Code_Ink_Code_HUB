@@ -1,0 +1,12 @@
+{
+  "name": "qr-code-tool-server",
+  "version": "1.0.0",
+  "description": "Local Express server for QR Code Tool",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR Code Tool — ใบแจ้งพิมพ์รหัสผลิตภัณฑ์</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+  :root {
+    --bg1: #eef2f7;
+    --bg2: #dde6f0;
+    --card: #ffffff;
+    --border: #e3e7ee;
+    --text: #1f2430;
+    --text-muted: #6b7280;
+    --accent: #0f6e56;
+    --accent2: #14a37e;
+    --accent-light: #e1f5ee;
+    --warn-bg: #fff4e0;
+    --warn-border: #f0a83a;
+    --warn-text: #7a4a06;
+    --err-bg: #fdeceb;
+    --err-border: #e8635f;
+    --err-text: #8a1f1f;
+    --shadow-sm: 0 1px 2px rgba(20,30,50,.06), 0 1px 1px rgba(20,30,50,.04);
+    --shadow-md: 0 10px 24px rgba(30,40,70,.10), 0 2px 6px rgba(30,40,70,.06);
+    --shadow-lg: 0 22px 45px rgba(20,40,70,.16), 0 6px 14px rgba(20,40,70,.08);
+    --shadow-inset: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -1px 0 rgba(20,30,50,.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Tahoma", "Sarabun", sans-serif;
+    background: radial-gradient(circle at 10% -10%, #f4f8fc 0%, var(--bg1) 35%, var(--bg2) 100%);
+    color: var(--text);
+    margin: 0;
+    padding: 28px 20px 60px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  .hero { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+  .hero-icon {
+    width: 52px; height: 52px; border-radius: 16px;
+    background: linear-gradient(145deg, var(--accent2), var(--accent));
+    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -.2px; }
+  .sub { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+  .tabs {
+    display: flex; gap: 8px; margin-bottom: 22px;
+    background: var(--card); padding: 6px; border-radius: 16px;
+    box-shadow: var(--shadow-sm), var(--shadow-inset); width: fit-content;
+  }
+  .tab-btn {
+    padding: 11px 22px; background: none; border: none; border-radius: 12px;
+    font-weight: 700; color: var(--text-muted); cursor: pointer; font-size: 14px; transition: .18s;
+  }
+  .tab-btn.active {
+    color: #fff; background: linear-gradient(145deg, var(--accent2), var(--accent));
+    box-shadow: var(--shadow-md);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+    padding: 22px; margin-bottom: 18px; box-shadow: var(--shadow-md), var(--shadow-inset);
+  }
+
+  .dropzone {
+    border: 2px dashed #c9d4e2; border-radius: 18px; padding: 44px 20px; text-align: center;
+    cursor: pointer; transition: .18s; background: linear-gradient(180deg, #fbfdff, #f3f7fb); display: block;
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--accent2); background: var(--accent-light);
+    transform: translateY(-1px); box-shadow: var(--shadow-md);
+  }
+  .dropzone input { display: none; }
+  .dz-icon { font-size: 36px; margin-bottom: 10px; filter: drop-shadow(0 4px 8px rgba(20,40,70,.15)); }
+  .dz-text { font-weight: 700; font-size: 15px; }
+  .dz-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .filename-bar { display: flex; align-items: center; gap: 12px; font-size: 14px; margin-bottom: 4px; }
+  .filename-bar .file-badge {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(145deg, #fff, #eef2f7);
+    box-shadow: var(--shadow-sm), inset 0 1px 0 #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+  }
+  .filename-bar .name { font-weight: 700; }
+  .filename-bar .size { color: var(--text-muted); font-size: 13px; }
+
+  button {
+    font: inherit; padding: 11px 20px; border: none; border-radius: 12px;
+    background: linear-gradient(145deg, var(--accent2), var(--accent)); color: white;
+    cursor: pointer; font-weight: 700;
+    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.25); transition: .15s;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+  button:active { transform: translateY(0); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform:none; box-shadow:var(--shadow-sm); }
+  button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+
+  .stats { display: flex; gap: 14px; flex-wrap: wrap; margin: 6px 0; }
+  .stat {
+    background: linear-gradient(160deg, #fff, #f5f8fb); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 18px; font-size: 13px;
+    box-shadow: var(--shadow-sm), var(--shadow-inset); min-width: 110px;
+  }
+  .stat b { font-size: 22px; display: block; color: var(--accent); }
+  .stat.bad b { color: var(--err-text); }
+
+  .progress-wrap {
+    background: #e7ecf2; border-radius: 999px; height: 9px; overflow: hidden;
+    margin: 14px 0; box-shadow: inset 0 1px 3px rgba(20,30,50,.15);
+  }
+  .progress-bar {
+    height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent));
+    width: 0%; transition: width 0.2s; box-shadow: 0 0 8px rgba(20,160,120,.5);
+  }
+
+  .spinner {
+    width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff;
+    border-radius: 50%; display: inline-block; animation: spin .7s linear infinite;
+    margin-right: 8px; vertical-align: -3px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); }
+  th {
+    text-align: left; padding: 10px 12px; background: #f3f6fa;
+    border-bottom: 2px solid var(--border); font-weight: 700; white-space: nowrap;
+  }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: #fafcfe; }
+  .mono { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; word-break: break-all; }
+  .badge {
+    display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 11px;
+    font-weight: 700; white-space: nowrap; box-shadow: var(--shadow-sm);
+  }
+  .badge-ok { background: var(--accent-light); color: var(--accent); }
+  .badge-err { background: var(--err-bg); color: var(--err-text); }
+  .badge-warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
+
+  .table-wrap { max-height: 600px; overflow: auto; border: 1px solid var(--border); border-radius: 14px; }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 40px 20px; }
+
+  /* Package type selector (big box buttons) */
+  .pkg-select-grid { display: flex; gap: 14px; flex-wrap: wrap; }
+  .pkg-btn {
+    flex: 1 1 220px; min-width: 200px; display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 22px 18px; border-radius: 18px; border: 2px solid var(--border);
+    background: linear-gradient(160deg, #fff, #f7faff); cursor: pointer; text-align: center;
+    box-shadow: var(--shadow-sm), var(--shadow-inset); transition: .15s; color: var(--text);
+  }
+  .pkg-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent2); }
+  .pkg-btn .pkg-icon { font-size: 34px; line-height: 1; }
+  .pkg-btn .pkg-label { font-weight: 800; font-size: 16px; }
+  .pkg-btn .pkg-sub { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+  .pkg-btn.active {
+    border-color: var(--accent2); background: linear-gradient(160deg, var(--accent-light), #eafaf3);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(20,163,126,.18);
+  }
+  .pkg-btn.active .pkg-label { color: var(--accent); }
+  .pkg-btn.active .pkg-sub { color: var(--accent); }
+  .pkg-status { font-size: 13px; margin-top: 10px; font-weight: 700; }
+  .pkg-status.unselected { color: var(--err-text); }
+  .pkg-status.selected { color: var(--accent); }
+  .dropzone.locked { opacity: .45; pointer-events: none; filter: grayscale(.4); }
+
+  .note {
+    background: linear-gradient(160deg, var(--warn-bg), #fffaf0); border: 1px solid var(--warn-border);
+    color: var(--warn-text); border-radius: 14px; padding: 13px 18px; font-size: 13px;
+    margin-bottom: 18px; box-shadow: var(--shadow-sm);
+  }
+
+  .summary-block {
+    border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; margin-bottom: 14px;
+    background: linear-gradient(160deg, #fff, #f7faff); box-shadow: var(--shadow-sm), var(--shadow-inset);
+  }
+  .summary-block .sb-title {
+    font-weight: 800; font-size: 14px; color: var(--accent); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sb-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 16px; font-size: 13px; margin-bottom: 10px; }
+  .sb-meta .lbl { color: var(--text-muted); font-size: 11px; }
+  .sb-meta .val { font-weight: 700; }
+  .sb-rows {
+    background: #fbfcfe; border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
+    font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; color: var(--text-muted);
+    max-height: 110px; overflow-y: auto;
+  }
+
+  .loading-overlay {
+    display: none; align-items: center; gap: 10px;
+    background: linear-gradient(145deg, var(--accent2), var(--accent)); color: #fff;
+    padding: 14px 20px; border-radius: 14px; font-weight: 700; font-size: 14px;
+    box-shadow: var(--shadow-md); margin-bottom: 16px;
+  }
+
+  #hiddenQrHost, #hiddenCanvasHost { position: absolute; left: -9999px; top: -9999px; }
+
+  /* Full-screen FAIL alert shown when a mismatch is found during verification */
+  .fail-overlay {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: #b30f0f;
+    align-items: center; justify-content: center; flex-direction: column;
+    animation: failFlash 0.35s steps(1) infinite;
+  }
+  .fail-overlay.show { display: flex; }
+  @keyframes failFlash {
+    0%, 49% { background: #b30f0f; }
+    50%, 100% { background: #7a0a0a; }
+  }
+  .fail-overlay .fail-icon {
+    font-size: 110px; line-height: 1; margin-bottom: 10px;
+    animation: failPulse 0.35s ease-in-out infinite alternate;
+  }
+  .fail-overlay .fail-text {
+    color: #fff; font-weight: 900; font-size: 68px; letter-spacing: 4px;
+    text-shadow: 0 6px 24px rgba(0,0,0,.35);
+  }
+  .fail-overlay .fail-sub {
+    color: #ffd9d9; font-weight: 700; font-size: 18px; margin-top: 14px;
+  }
+  @keyframes failPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.12); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-icon">▦</div>
+    <div>
+      <h1>QR Code Tool</h1>
+      <div class="sub">สร้างและตรวจสอบ QR Code สำหรับใบแจ้งพิมพ์รหัสผลิตภัณฑ์ (.xlsx)</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="generate">1. สร้าง QR Code</button>
+    <button class="tab-btn" data-tab="verify">2. ตรวจสอบ QR Code</button>
+  </div>
+
+  <!-- ============== TAB 1: GENERATE ============== -->
+  <div class="tab-panel active" id="panel-generate">
+
+    <div class="note">
+      ข้อมูล QR สร้างจากช่วงคอลัมน์ใต้หัว "ตำแหน่ง" (เช่น E:AR หรือ G:AT แล้วแต่ชีต) 4 แถวต่อ 1 QR
+      จำนวนตัวอักษรต่อแถวขึ้นกับประเภทบรรจุภัณฑ์ที่เลือกด้านล่าง (Can = 23 ตัวอักษร/แถว,
+      Pouch/Cup/อื่นๆ = 40 ตัวอักษร/แถว เหมือนเดิม) เติมช่องว่างให้ครบเสมอ รวม 4 แถว = ข้อมูลอ้างอิง
+      (ตัด space ต่อท้ายออกก่อนสร้างเป็น QR จริง เพื่อให้สแกนด้วยมือถือได้ง่ายขึ้น)
+      เลือกประเภทบรรจุภัณฑ์แล้วอัพโหลดไฟล์ ระบบจะสร้าง QR Code ให้ทันทีในทุกชีตที่พบ label "QR Code" โดยอัตโนมัติ
+      ขนาด QR จะปรับ (auto) ตามความยาวข้อมูลจริงในแต่ละบล็อกโดยอัตโนมัติ
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800; font-size:15px; margin-bottom:14px;">เลือกประเภทบรรจุภัณฑ์ (Package Type)</div>
+      <div class="pkg-select-grid">
+        <button type="button" class="pkg-btn" id="genPkgBtnCan" data-pkg="can">
+          <span class="pkg-icon">🥫</span>
+          <span class="pkg-label">Can</span>
+          <span class="pkg-sub">23 หลัก / แถว</span>
+        </button>
+        <button type="button" class="pkg-btn" id="genPkgBtnOther" data-pkg="other">
+          <span class="pkg-icon">📦</span>
+          <span class="pkg-label">Pouch / Cup / อื่นๆ</span>
+          <span class="pkg-sub">40 หลัก / แถว</span>
+        </button>
+      </div>
+      <div class="pkg-status unselected" id="genPkgStatus">⚠️ กรุณาเลือกประเภทบรรจุภัณฑ์ก่อนอัพโหลดไฟล์</div>
+    </div>
+
+    <div class="card">
+      <label class="dropzone locked" id="dropzoneGen">
+        <input type="file" id="fileInputGen" accept=".xlsx">
+        <div class="dz-icon">📂</div>
+        <div class="dz-text">คลิกเพื่อเลือกไฟล์ Excel หรือลากไฟล์มาวางที่นี่</div>
+        <div class="dz-sub">รองรับเฉพาะ .xlsx — สร้าง QR Code ให้อัตโนมัติทันทีที่อัพโหลด (เลือกประเภทบรรจุภัณฑ์ก่อน)</div>
+      </label>
+    </div>
+
+    <div class="loading-overlay" id="genLoadingOverlay">
+      <span class="spinner"></span><span id="genLoadingText">กำลังประมวลผลไฟล์...</span>
+    </div>
+
+    <div id="genWorkArea" style="display:none;">
+      <div class="card">
+        <div class="filename-bar">
+          <span class="file-badge">📄</span>
+          <span class="name" id="genFileName"></span>
+          <span class="size" id="genFileSize"></span>
+        </div>
+        <div class="progress-wrap" id="genProgressWrap" style="display:none;">
+          <div class="progress-bar" id="genProgressBar"></div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <button class="secondary" id="resetGenBtn">เลือกไฟล์ใหม่</button>
+        </div>
+      </div>
+
+      <div class="card" id="genStatsCard" style="display:none;">
+        <div class="stats" id="genStatsBar"></div>
+        <div style="margin-top:12px;">
+          <button id="downloadGenBtn" style="display:none;">ดาวน์โหลดไฟล์ผลลัพธ์</button>
+        </div>
+      </div>
+
+      <div id="genErrorArea"></div>
+      <div id="genSummaryArea"></div>
+    </div>
+
+    <div id="genEmptyState" class="empty-state">ยังไม่ได้อัพโหลดไฟล์</div>
+  </div>
+
+  <!-- ============== TAB 2: VERIFY ============== -->
+  <div class="tab-panel" id="panel-verify">
+
+    <div class="note">
+      อัพโหลดไฟล์ที่มีรูป QR Code ฝังอยู่แล้ว ระบบจะอ่าน (decode) รูป QR แต่ละรูป
+      แล้วเทียบกับข้อมูลที่ควรจะเป็นจากคอลัมน์ "ตำแหน่ง" ในแถวเดียวกัน (23 ตัวอักษร/แถวสำหรับ Can,
+      40 ตัวอักษร/แถวสำหรับ Pouch/Cup/อื่นๆ — เลือกประเภทให้ตรงกับตอนสร้าง QR)
+      เพื่อตรวจว่าข้อมูลตรงกันหรือไม่ รองรับทั้งไฟล์หลายชีตและชีตเดียว ไฟล์ขนาดใหญ่อาจใช้เวลาสักครู่
+      — กรุณารอให้แถบสถานะทำงานจนเสร็จ โดยไม่ต้องรีเฟรชหน้าจอ
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800; font-size:15px; margin-bottom:14px;">เลือกประเภทบรรจุภัณฑ์ (Package Type)</div>
+      <div class="pkg-select-grid">
+        <button type="button" class="pkg-btn" id="verPkgBtnCan" data-pkg="can">
+          <span class="pkg-icon">🥫</span>
+          <span class="pkg-label">Can</span>
+          <span class="pkg-sub">23 หลัก / แถว</span>
+        </button>
+        <button type="button" class="pkg-btn" id="verPkgBtnOther" data-pkg="other">
+          <span class="pkg-icon">📦</span>
+          <span class="pkg-label">Pouch / Cup / อื่นๆ</span>
+          <span class="pkg-sub">40 หลัก / แถว</span>
+        </button>
+      </div>
+      <div class="pkg-status unselected" id="verPkgStatus">⚠️ กรุณาเลือกประเภทบรรจุภัณฑ์ก่อนอัพโหลดไฟล์</div>
+    </div>
+
+    <div class="card">
+      <label class="dropzone locked" id="dropzoneVer">
+        <input type="file" id="fileInputVer" accept=".xlsx">
+        <div class="dz-icon">🔍</div>
+        <div class="dz-text">คลิกเพื่อเลือกไฟล์ Excel ที่มี QR Code อยู่แล้ว</div>
+        <div class="dz-sub">รองรับเฉพาะ .xlsx (เลือกประเภทบรรจุภัณฑ์ก่อน)</div>
+      </label>
+    </div>
+
+    <div class="loading-overlay" id="verLoadingOverlay">
+      <span class="spinner"></span><span id="verLoadingText">กำลังโหลดไฟล์...</span>
+    </div>
+
+    <div id="verWorkArea" style="display:none;">
+      <div class="card">
+        <div class="filename-bar">
+          <span class="file-badge">📄</span>
+          <span class="name" id="verFileName"></span>
+          <span class="size" id="verFileSize"></span>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <button id="runVerBtn">ตรวจสอบ QR Code ทั้งหมด</button>
+          <button class="secondary" id="resetVerBtn">เลือกไฟล์ใหม่</button>
+        </div>
+        <div class="progress-wrap" id="verProgressWrap" style="display:none;">
+          <div class="progress-bar" id="verProgressBar"></div>
+        </div>
+        <div id="verProgressLabel" style="font-size:12px; color:var(--text-muted); display:none;"></div>
+      </div>
+
+      <div class="card" id="verStatsCard" style="display:none;">
+        <div class="stats" id="verStatsBar"></div>
+      </div>
+
+      <div class="card" id="verTableCard" style="display:none; padding:0;">
+        <div class="table-wrap">
+          <table id="verTable">
+            <thead>
+              <tr>
+                <th>ชีต</th>
+                <th>แถว QR</th>
+                <th>สถานะ</th>
+                <th>ข้อมูลที่ควรเป็น (จากตาราง)</th>
+                <th>ข้อมูลที่อ่านได้จาก QR</th>
+              </tr>
+            </thead>
+            <tbody id="verTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="verEmptyState" class="empty-state">ยังไม่ได้อัพโหลดไฟล์</div>
+  </div>
+
+  <div id="hiddenQrHost"></div>
+  <canvas id="hiddenCanvasHost"></canvas>
+
+  <!-- Full-screen FAIL alert -->
+  <div class="fail-overlay" id="failOverlay">
+    <div class="fail-icon">⚠️</div>
+    <div class="fail-text">FAIL</div>
+    <div class="fail-sub" id="failSubText">พบข้อมูล QR Code ไม่ตรงกัน</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SHARED LOGIC
+// ============================================================
+const QR_LABEL = 'QR Code';
+const POS_LABEL = 'ตำแหน่ง';
+const CHARS_PER_ROW = 40; // default / fallback (Pouch, Cup, other)
+const ROWS_PER_QR = 4;
+
+// Package type -> characters per row. Can uses a shorter 23-digit row;
+// everything else (Pouch, Cup, etc.) keeps the original 40-digit row.
+const PKG_TYPES = {
+  can:   { label: 'Can',                 chars: 23 },
+  other: { label: 'Pouch / Cup / อื่นๆ', chars: 40 }
+};
+
+// ---- Package type selector wiring (shared helper, used by both tabs) ----
+function wirePkgSelector(prefix, onChange) {
+  const btnCan = document.getElementById(prefix + 'PkgBtnCan');
+  const btnOther = document.getElementById(prefix + 'PkgBtnOther');
+  const statusEl = document.getElementById(prefix + 'PkgStatus');
+  const dropzone = document.getElementById('dropzone' + (prefix === 'gen' ? 'Gen' : 'Ver'));
+  let selected = null;
+
+  function apply() {
+    btnCan.classList.toggle('active', selected === 'can');
+    btnOther.classList.toggle('active', selected === 'other');
+    if (selected) {
+      statusEl.textContent = '✅ เลือกแล้ว: ' + PKG_TYPES[selected].label + ' (' + PKG_TYPES[selected].chars + ' หลัก/แถว)';
+      statusEl.className = 'pkg-status selected';
+      dropzone.classList.remove('locked');
+    } else {
+      statusEl.textContent = '⚠️ กรุณาเลือกประเภทบรรจุภัณฑ์ก่อนอัพโหลดไฟล์';
+      statusEl.className = 'pkg-status unselected';
+      dropzone.classList.add('locked');
+    }
+    if (onChange) onChange(selected);
+  }
+
+  btnCan.addEventListener('click', () => { selected = 'can'; apply(); });
+  btnOther.addEventListener('click', () => { selected = 'other'; apply(); });
+  apply();
+
+  return { get: () => selected };
+}
+
+// Header row labels used to locate the per-row data columns (these sit in
+// the same header row as "ตำแหน่ง", but off to the right and to the left
+// of it — values for each QR block live in that block's first row).
+const HEADER_ROW_LABELS = {
+  customer: ['ลูกค้า'],
+  type: ['ชนิด'],
+  formulaCode: ['รหัสเอกสารสูตรการผลิต'],
+  lineCode: ['รหัสเอกสารระบบ Code']
+};
+
+function yieldToUI() {
+  return new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+}
+
+function colLetter(n) {
+  let s = '';
+  while (n > 0) {
+    const m = (n - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    n = Math.floor((n - m) / 26);
+  }
+  return s;
+}
+
+function findLabelCol(ws, label, maxScanRows = 60) {
+  const lastRow = Math.min(ws.rowCount, maxScanRows);
+  for (let r = 1; r <= lastRow; r++) {
+    const row = ws.getRow(r);
+    for (let c = 1; c <= ws.columnCount; c++) {
+      const v = row.getCell(c).value;
+      if (typeof v === 'string' && v.trim() === label) return c;
+    }
+  }
+  return null;
+}
+
+function findAllLabelOccurrences(ws, label, maxScanRows = 1000) {
+  const out = [];
+  const lastRow = Math.min(ws.rowCount, maxScanRows);
+  for (let r = 1; r <= lastRow; r++) {
+    const row = ws.getRow(r);
+    for (let c = 1; c <= ws.columnCount; c++) {
+      const v = row.getCell(c).value;
+      if (typeof v === 'string' && v.trim() === label) out.push({ row: r, col: c });
+    }
+  }
+  return out;
+}
+
+function findPositionRange(ws) {
+  const occurrences = findAllLabelOccurrences(ws, POS_LABEL, 15);
+  for (const occ of occurrences) {
+    for (const rr of [occ.row, occ.row + 1]) {
+      let cStart = null;
+      const nums = [];
+      for (let c = 1; c <= ws.columnCount; c++) {
+        const v = ws.getRow(rr).getCell(c).value;
+        if (typeof v === 'number' && Math.round(v) === 1 && cStart === null) {
+          cStart = c;
+        }
+        if (cStart !== null && typeof v === 'number') {
+          nums.push(v);
+        } else if (cStart !== null && typeof v !== 'number') {
+          break;
+        }
+      }
+      if (cStart !== null && nums.length >= 35) {
+        return { colStart: cStart, colEnd: cStart + nums.length - 1 };
+      }
+    }
+  }
+  return null;
+}
+
+// Find the header row (the row that contains "ลูกค้า"), then map each
+// known label to its column index. Per-block values (customer, type, the
+// two document codes) live in the same column, in the FIRST row of each
+// 4-row QR block — not next to the label itself.
+function findHeaderRowCols(ws, maxScanRows = 20) {
+  const lastRow = Math.min(ws.rowCount, maxScanRows);
+  for (let r = 1; r <= lastRow; r++) {
+    const row = ws.getRow(r);
+    let hasCustomerLabel = false;
+    for (let c = 1; c <= ws.columnCount; c++) {
+      const v = row.getCell(c).value;
+      if (typeof v === 'string' && v.trim() === 'ลูกค้า') { hasCustomerLabel = true; break; }
+    }
+    if (!hasCustomerLabel) continue;
+
+    const cols = {};
+    for (let c = 1; c <= ws.columnCount; c++) {
+      const v = row.getCell(c).value;
+      if (typeof v !== 'string') continue;
+      const text = v.trim();
+      for (const key in HEADER_ROW_LABELS) {
+        if (cols[key] !== undefined) continue;
+        for (const variant of HEADER_ROW_LABELS[key]) {
+          if (text === variant || text.startsWith(variant)) { cols[key] = c; break; }
+        }
+      }
+    }
+    return cols;
+  }
+  return {};
+}
+
+// ------------------------------------------------------------------
+// FIX: ExcelJS returns non-primitive objects for some cell kinds —
+// formula cells ({formula, result}), rich text ({richText: [...]}),
+// hyperlinks ({text, hyperlink}), and errors ({error: '#REF!'}).
+// The old code did String(cellValue) directly, which for these
+// objects produced the literal text "[object Object]" instead of the
+// actual content. This is especially common for formula cells that
+// reference an EXTERNAL linked workbook (e.g. '[1]SheetName'!...) —
+// if that external file was never opened/recalculated in real Excel,
+// the .xlsx has no cached result for the formula at all, so there is
+// no value to recover; we fall back to blank rather than garbage text.
+// ------------------------------------------------------------------
+function cellValueToString(v) {
+  if (v === null || v === undefined) return '';
+  const t = typeof v;
+  if (t === 'string' || t === 'number' || t === 'boolean') return String(v);
+  if (v instanceof Date) return v.toLocaleDateString('th-TH');
+  if (t === 'object') {
+    if (Array.isArray(v.richText)) return v.richText.map(rt => rt.text || '').join('');
+    if (typeof v.text === 'string') return v.text; // hyperlink cell
+    if ('result' in v) { // formula cell
+      const r = v.result;
+      if (r === null || r === undefined) return ''; // no cached result (e.g. unresolved external link)
+      if (typeof r === 'object') {
+        if (r instanceof Date) return r.toLocaleDateString('th-TH');
+        return ''; // formula error object, e.g. {error: '#N/A'}
+      }
+      return String(r);
+    }
+    if (typeof v.error === 'string') return ''; // direct error value
+    return ''; // unrecognized object shape — fail safe to blank, never "[object Object]"
+  }
+  return String(v);
+}
+
+function cellText(ws, row, col) {
+  if (!col) return null;
+  const v = ws.getRow(row).getCell(col).value;
+  const s = cellValueToString(v).trim();
+  return s === '' ? null : s;
+}
+
+function getMergesInCol(ws, colIdx) {
+  const merges = [];
+  const seen = new Set();
+  for (const key in ws._merges) {
+    const m = ws._merges[key];
+    const top = m.model.top, bottom = m.model.bottom, left = m.model.left, right = m.model.right;
+    if (left === colIdx && right === colIdx) {
+      const sig = top + '-' + bottom;
+      if (!seen.has(sig)) {
+        seen.add(sig);
+        merges.push({ rowStart: top, rowEnd: bottom });
+      }
+    }
+  }
+  merges.sort((a, b) => a.rowStart - b.rowStart);
+  return merges;
+}
+
+function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = CHARS_PER_ROW) {
+  let full = '';
+  for (let r = rowStart; r <= rowEnd; r++) {
+    let chars = [];
+    for (let c = colStart; c <= colEnd; c++) {
+      const v = ws.getRow(r).getCell(c).value;
+      const s = cellValueToString(v);
+      chars.push(s === '' ? ' ' : s);
+    }
+    let rowStr = chars.join('');
+    if (rowStr.length < charsPerRow) rowStr = rowStr.padEnd(charsPerRow, ' ');
+    else rowStr = rowStr.substring(0, charsPerRow);
+    full += rowStr;
+  }
+  return full;
+}
+
+function buildQrRowsArray(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = CHARS_PER_ROW) {
+  const rows = [];
+  for (let r = rowStart; r <= rowEnd; r++) {
+    let chars = [];
+    for (let c = colStart; c <= colEnd; c++) {
+      const v = ws.getRow(r).getCell(c).value;
+      const s = cellValueToString(v);
+      chars.push(s === '' ? ' ' : s);
+    }
+    let rowStr = chars.join('');
+    if (rowStr.length < charsPerRow) rowStr = rowStr.padEnd(charsPerRow, ' ');
+    else rowStr = rowStr.substring(0, charsPerRow);
+    rows.push(rowStr);
+  }
+  return rows;
+}
+
+function colWidthToPx(ws, colIdx) {
+  const col = ws.getColumn(colIdx);
+  const w = col.width || 8.43;
+  return w * 7.0;
+}
+
+function rowsHeightToPx(ws, rowStart, rowEnd) {
+  let total = 0;
+  for (let r = rowStart; r <= rowEnd; r++) {
+    const h = ws.getRow(r).height || 15.0;
+    total += h * 1.33;
+  }
+  return total;
+}
+
+function stripTrailingSpaces(text) {
+  return text.replace(/\s+$/, '');
+}
+
+// ------------------------------------------------------------------
+// FIX: the qrcodejs library (davidshimjs, v1.0.0) defaults to a FIXED
+// typeNumber of 4 when none is given. QR version 4 at error-correction
+// level M can only hold ~78 bytes of byte-mode data. Our payloads can be
+// up to ~160 characters (4 rows x 40 chars, after trimming trailing
+// spaces they commonly run 100-166 characters), which is far larger
+// than version 4's capacity — this is exactly what produced the
+// "code length overflow (2604>2032)" style errors.
+//
+// The fix is to explicitly pass typeNumber: 0, which tells the library
+// to auto-detect the smallest QR version that fits the given text
+// (scanning versions 1-40 internally), instead of forcing version 4.
+// We additionally retry with a lower error-correction level if even
+// the largest version can't hold the text (extremely unlikely here,
+// but kept as a safety net so generation never silently throws).
+// ------------------------------------------------------------------
+function generateQrPngDataUrl(text, sizePx) {
+  return new Promise((resolve, reject) => {
+    const host = document.getElementById('hiddenQrHost');
+
+    const levels = [QRCode.CorrectLevel.M, QRCode.CorrectLevel.L];
+    let lastErr = null;
+
+    for (const level of levels) {
+      host.innerHTML = '';
+      const div = document.createElement('div');
+      host.appendChild(div);
+      try {
+        new QRCode(div, {
+          text: text,
+          width: sizePx,
+          height: sizePx,
+          typeNumber: 0, // auto-detect smallest QR version that fits `text`
+          correctLevel: level
+        });
+      } catch (e) {
+        lastErr = e;
+        continue; // try the next (lower) correction level before giving up
+      }
+
+      setTimeout(() => {
+        const canvas = div.querySelector('canvas');
+        if (canvas) {
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          const img = div.querySelector('img');
+          resolve(img ? img.src : null);
+        }
+        host.innerHTML = '';
+      }, 30);
+      return;
+    }
+
+    // All correction levels failed (text too long even for the largest QR version).
+    host.innerHTML = '';
+    reject(lastErr || new Error('ไม่สามารถสร้าง QR Code ได้: ข้อความยาวเกินขีดจำกัดของ QR Code'));
+  });
+}
+
+// ------------------------------------------------------------------
+// FIX: qrcodejs draws modules edge-to-edge with NO white quiet zone
+// around them. Our own Verify tab (jsQR) tolerates this fine, but real
+// phone cameras (iOS Camera included) follow the QR standard, which
+// requires a blank white margin (~4 modules wide) around the code to
+// lock on and decode — without it, cameras frame the code (they can
+// see the finder-pattern squares) but fail to read any data. This
+// wrapper generates the QR slightly smaller, then pads it with a white
+// border up to the original target size before it gets embedded.
+// ------------------------------------------------------------------
+function generateQrPngDataUrlWithQuietZone(text, totalSizePx, quietZoneRatio = 0.22) {
+  return new Promise((resolve, reject) => {
+    const innerSize = Math.max(40, Math.round(totalSizePx * (1 - quietZoneRatio)));
+    generateQrPngDataUrl(text, innerSize).then(rawDataUrl => {
+      if (!rawDataUrl) { resolve(null); return; }
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = totalSizePx;
+        canvas.height = totalSizePx;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, totalSizePx, totalSizePx);
+        const offset = Math.round((totalSizePx - innerSize) / 2);
+        ctx.imageSmoothingEnabled = false; // keep QR modules crisp, no blur
+        ctx.drawImage(img, offset, offset, innerSize, innerSize);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => reject(new Error('ไม่สามารถเพิ่มขอบขาว (quiet zone) ให้ QR Code ได้'));
+      img.src = rawDataUrl;
+    }).catch(reject);
+  });
+}
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ============================================================
+// FAIL ALERT (full-screen flash + loud alarm sound for 2 seconds)
+// ============================================================
+let failAudioCtx = null;
+
+function playFailAlarm(durationMs) {
+  try {
+    if (!failAudioCtx) failAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = failAudioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const startAt = ctx.currentTime;
+    const endAt = startAt + durationMs / 1000;
+
+    // Two alternating harsh tones (siren-style) at high volume.
+    const master = ctx.createGain();
+    master.gain.value = 1.0;
+    master.connect(ctx.destination);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    const gain = ctx.createGain();
+    gain.gain.value = 0.9;
+    osc.connect(gain);
+    gain.connect(master);
+
+    // Sweep frequency up/down repeatedly to sound like a loud alarm siren.
+    let t = startAt;
+    const stepMs = 0.18;
+    let toggle = false;
+    while (t < endAt) {
+      osc.frequency.setValueAtTime(toggle ? 1500 : 900, t);
+      toggle = !toggle;
+      t += stepMs;
+    }
+
+    osc.start(startAt);
+    osc.stop(endAt);
+  } catch (e) {
+    console.warn('ไม่สามารถเล่นเสียงแจ้งเตือนได้', e);
+  }
+}
+
+function showFailAlert(subText, durationMs = 2000) {
+  const overlay = document.getElementById('failOverlay');
+  const sub = document.getElementById('failSubText');
+  if (subText) sub.textContent = subText;
+  overlay.classList.add('show');
+  playFailAlarm(durationMs);
+  setTimeout(() => {
+    overlay.classList.remove('show');
+  }, durationMs);
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ============================================================
+// TAB 1: GENERATE  (auto-runs as soon as a file is dropped/selected)
+// ============================================================
+let genResultBlob = null;
+let genFileName = '';
+
+const genPkgSelector = wirePkgSelector('gen');
+
+const dropzoneGen = document.getElementById('dropzoneGen');
+const fileInputGen = document.getElementById('fileInputGen');
+
+['dragenter','dragover'].forEach(evt =>
+  dropzoneGen.addEventListener(evt, e => { e.preventDefault(); dropzoneGen.classList.add('drag'); })
+);
+['dragleave','drop'].forEach(evt =>
+  dropzoneGen.addEventListener(evt, e => { e.preventDefault(); dropzoneGen.classList.remove('drag'); })
+);
+dropzoneGen.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) handleGenFile(f); });
+fileInputGen.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleGenFile(f); });
+
+function setGenLoading(visible, text) {
+  document.getElementById('genLoadingOverlay').style.display = visible ? 'flex' : 'none';
+  if (text) document.getElementById('genLoadingText').textContent = text;
+}
+
+async function handleGenFile(file) {
+  if (!genPkgSelector.get()) {
+    alert('กรุณาเลือกประเภทบรรจุภัณฑ์ (Can / Pouch / Cup / อื่นๆ) ก่อนอัพโหลดไฟล์');
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    alert('กรุณาเลือกไฟล์ .xlsx เท่านั้น');
+    return;
+  }
+
+  genFileName = file.name;
+  genResultBlob = null;
+
+  document.getElementById('genFileName').textContent = file.name;
+  document.getElementById('genFileSize').textContent = '(' + (file.size / 1024).toFixed(0) + ' KB)';
+  document.getElementById('genWorkArea').style.display = 'block';
+  document.getElementById('genEmptyState').style.display = 'none';
+  document.getElementById('genStatsCard').style.display = 'none';
+  document.getElementById('downloadGenBtn').style.display = 'none';
+  document.getElementById('genErrorArea').innerHTML = '';
+  document.getElementById('genSummaryArea').innerHTML = '';
+
+  setGenLoading(true, 'กำลังอ่านไฟล์...');
+  await yieldToUI();
+
+  let arrayBuffer;
+  try {
+    arrayBuffer = await file.arrayBuffer();
+  } catch (err) {
+    setGenLoading(false);
+    alert('ไม่สามารถอ่านไฟล์ได้ กรุณาลองเลือกไฟล์ใหม่อีกครั้ง: ' + err.message);
+    return;
+  }
+
+  try {
+    await runGeneration(arrayBuffer);
+  } catch (err) {
+    setGenLoading(false);
+    if (/central directory|zip file/i.test(err.message || '')) {
+      alert('ไฟล์นี้ไม่ใช่ไฟล์ .xlsx ที่สมบูรณ์ (เปิดเป็น ZIP ไม่ได้) กรุณาตรวจสอบว่าไฟล์อัพโหลดสำเร็จครบถ้วน แล้วลองใหม่อีกครั้ง');
+    } else {
+      alert('เกิดข้อผิดพลาด: ' + err.message);
+    }
+    console.error(err);
+  }
+}
+
+document.getElementById('resetGenBtn').addEventListener('click', () => {
+  genResultBlob = null;
+  fileInputGen.value = '';
+  document.getElementById('genWorkArea').style.display = 'none';
+  document.getElementById('genEmptyState').style.display = 'block';
+  setGenLoading(false);
+});
+
+async function runGeneration(arrayBuffer) {
+  const pkgKey = genPkgSelector.get() || 'other';
+  const pkgInfo = PKG_TYPES[pkgKey];
+  const charsPerRow = pkgInfo.chars;
+
+  document.getElementById('genProgressWrap').style.display = 'block';
+  document.getElementById('genProgressBar').style.width = '0%';
+
+  setGenLoading(true, 'กำลังเปิดไฟล์ Excel...');
+  await yieldToUI();
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(arrayBuffer);
+  await yieldToUI();
+
+  const detectedSheets = [];
+  workbook.worksheets.forEach(ws => {
+    const qrCol = findLabelCol(ws, QR_LABEL);
+    if (qrCol !== null) detectedSheets.push(ws.name);
+  });
+
+  if (detectedSheets.length === 0) {
+    setGenLoading(false);
+    document.getElementById('genSummaryArea').innerHTML =
+      '<div class="note" style="margin:0;">ไม่พบชีตที่มี label "QR Code" ในไฟล์นี้</div>';
+    return;
+  }
+
+  let totalInserted = 0, totalSkipped = 0, totalSheetsTouched = 0;
+  const summary = [];
+  const genErrors = [];
+
+  for (let i = 0; i < detectedSheets.length; i++) {
+    const sheetName = detectedSheets[i];
+    const ws = workbook.getWorksheet(sheetName);
+    if (!ws) continue;
+
+    setGenLoading(true, `กำลังสร้าง QR Code: ${sheetName} (${i + 1}/${detectedSheets.length})`);
+    await yieldToUI();
+
+    const qrCol = findLabelCol(ws, QR_LABEL);
+    if (qrCol === null) continue;
+
+    const posRange = findPositionRange(ws);
+    if (!posRange) continue;
+
+    const merges = getMergesInCol(ws, qrCol);
+    if (merges.length === 0) continue;
+
+    const hcols = findHeaderRowCols(ws);
+
+    let sheetInserted = 0;
+
+    for (const mc of merges) {
+      const { rowStart, rowEnd } = mc;
+      const span = rowEnd - rowStart + 1;
+      if (span !== ROWS_PER_QR) { totalSkipped++; continue; }
+
+      const qrText = buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow);
+      if (qrText.trim() === '') { totalSkipped++; continue; }
+      const qrPayload = stripTrailingSpaces(qrText);
+      const qrRows = buildQrRowsArray(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow);
+
+      const formulaCode = cellText(ws, rowStart, hcols.formulaCode);
+      const lineCode = cellText(ws, rowStart, hcols.lineCode);
+      const customer = cellText(ws, rowStart, hcols.customer);
+      const type = cellText(ws, rowStart, hcols.type);
+
+      const widthPx = colWidthToPx(ws, qrCol);
+      const heightPx = rowsHeightToPx(ws, rowStart, rowEnd);
+      const targetPx = Math.max(80, Math.floor(Math.min(widthPx, heightPx) - 6));
+
+      let dataUrl;
+      try {
+        dataUrl = await generateQrPngDataUrlWithQuietZone(qrPayload, targetPx);
+      } catch (qrErr) {
+        totalSkipped++;
+        genErrors.push({ sheet: sheetName, rowStart, rowEnd, length: qrPayload.length, message: qrErr.message });
+        await yieldToUI();
+        continue;
+      }
+      if (!dataUrl) { totalSkipped++; continue; }
+
+      const base64 = dataUrl.split(',')[1];
+      const imageId = workbook.addImage({ base64, extension: 'png' });
+      ws.addImage(imageId, {
+        tl: { col: qrCol - 1, row: rowStart - 1 },
+        ext: { width: targetPx, height: targetPx }
+      });
+
+      sheetInserted++;
+      totalInserted++;
+
+      summary.push({
+        sheet: sheetName,
+        formulaCode, lineCode, customer, type,
+        rowStart, rowEnd,
+        rows: qrRows,
+        pkgLabel: pkgInfo.label,
+        charsPerRow
+      });
+
+      await yieldToUI();
+    }
+
+    if (sheetInserted > 0) totalSheetsTouched++;
+    document.getElementById('genProgressBar').style.width = Math.round(((i + 1) / detectedSheets.length) * 90) + '%';
+  }
+
+  setGenLoading(true, 'กำลังบันทึกไฟล์...');
+  await yieldToUI();
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  genResultBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  document.getElementById('genProgressBar').style.width = '100%';
+
+  document.getElementById('genStatsBar').innerHTML = `
+    <div class="stat"><b>${totalInserted}</b>QR Code ที่สร้างสำเร็จ</div>
+    <div class="stat ${totalSkipped > 0 ? 'bad' : ''}"><b>${totalSkipped}</b>บล็อกที่ข้าม</div>
+    <div class="stat"><b>${totalSheetsTouched}</b>ชีตที่แก้ไข</div>
+    <div class="stat"><b>${charsPerRow} หลัก/แถว</b>${escapeHtml(pkgInfo.label)}</div>
+    <div class="stat"><b>${(genResultBlob.size / 1024 / 1024).toFixed(2)} MB</b>ขนาดไฟล์</div>
+  `;
+  document.getElementById('genStatsCard').style.display = 'block';
+  document.getElementById('downloadGenBtn').style.display = 'inline-block';
+
+  renderGenErrors(genErrors);
+  renderGenSummary(summary);
+  setGenLoading(false);
+}
+
+function renderGenErrors(errors) {
+  const area = document.getElementById('genErrorArea');
+  if (errors.length === 0) { area.innerHTML = ''; return; }
+  area.innerHTML = `<div class="card" style="border-color:var(--err-border);">
+    <div style="font-weight:800; font-size:14px; color:var(--err-text); margin-bottom:10px;">
+      ไม่สามารถสร้าง QR Code ได้ ${errors.length} จุด
+    </div>
+    ${errors.map(e => `
+      <div style="font-size:12px; color:var(--err-text); margin-bottom:6px;">
+        ชีต "${escapeHtml(e.sheet)}" แถว ${e.rowStart}-${e.rowEnd} (ความยาวข้อมูล ${e.length} ตัวอักษร) — ${escapeHtml(e.message)}
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+function renderGenSummary(summary) {
+  const area = document.getElementById('genSummaryArea');
+  if (summary.length === 0) {
+    area.innerHTML = '';
+    return;
+  }
+  area.innerHTML = `<div class="card" style="padding-bottom:8px;">
+    <div style="font-weight:800; font-size:15px; margin-bottom:12px;">สรุปข้อมูล QR Code ที่สร้าง (${summary.length} ชุด)</div>
+    ${summary.map((s, idx) => `
+      <div class="summary-block">
+        <div class="sb-title">ชุดที่ ${idx + 1} — ชีต "${escapeHtml(s.sheet)}" · แถว ${s.rowStart}-${s.rowEnd}</div>
+        <div class="sb-meta">
+          <div><div class="lbl">รหัสเอกสารสูตรการผลิต</div><div class="val">${escapeHtml(s.formulaCode || '-')}</div></div>
+          <div><div class="lbl">รหัสเอกสารระบบ Code</div><div class="val">${escapeHtml(s.lineCode || '-')}</div></div>
+          <div><div class="lbl">ลูกค้า</div><div class="val">${escapeHtml(s.customer || '-')}</div></div>
+          <div><div class="lbl">ชนิด</div><div class="val">${escapeHtml(s.type || '-')}</div></div>
+          <div><div class="lbl">ประเภทบรรจุภัณฑ์ที่เลือก</div><div class="val">${escapeHtml(s.pkgLabel)} (${s.charsPerRow} หลัก/แถว)</div></div>
+        </div>
+        <div class="sb-rows">${s.rows.map((r, i) => `แถว ${s.rowStart + i}: ${escapeHtml(r)}`).join('<br>')}</div>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+document.getElementById('downloadGenBtn').addEventListener('click', () => {
+  if (!genResultBlob) return;
+  const url = URL.createObjectURL(genResultBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = genFileName.replace(/\.xlsx$/i, '') + '_with_QR.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ============================================================
+// TAB 2: VERIFY
+// ============================================================
+let verArrayBuffer = null;
+let verFileName = '';
+
+const verPkgSelector = wirePkgSelector('ver');
+
+const dropzoneVer = document.getElementById('dropzoneVer');
+const fileInputVer = document.getElementById('fileInputVer');
+
+['dragenter','dragover'].forEach(evt =>
+  dropzoneVer.addEventListener(evt, e => { e.preventDefault(); dropzoneVer.classList.add('drag'); })
+);
+['dragleave','drop'].forEach(evt =>
+  dropzoneVer.addEventListener(evt, e => { e.preventDefault(); dropzoneVer.classList.remove('drag'); })
+);
+dropzoneVer.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) loadVerFile(f); });
+fileInputVer.addEventListener('change', e => { const f = e.target.files[0]; if (f) loadVerFile(f); });
+
+function setVerLoading(visible, text) {
+  document.getElementById('verLoadingOverlay').style.display = visible ? 'flex' : 'none';
+  if (text) document.getElementById('verLoadingText').textContent = text;
+}
+
+async function loadVerFile(file) {
+  if (!verPkgSelector.get()) {
+    alert('กรุณาเลือกประเภทบรรจุภัณฑ์ (Can / Pouch / Cup / อื่นๆ) ก่อนอัพโหลดไฟล์');
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    alert('กรุณาเลือกไฟล์ .xlsx เท่านั้น');
+    return;
+  }
+
+  setVerLoading(true, 'กำลังโหลดไฟล์...');
+  await yieldToUI();
+
+  try {
+    verArrayBuffer = await file.arrayBuffer();
+  } catch (err) {
+    setVerLoading(false);
+    alert('ไม่สามารถอ่านไฟล์ได้ กรุณาลองเลือกไฟล์ใหม่อีกครั้ง: ' + err.message);
+    return;
+  }
+  verFileName = file.name;
+
+  document.getElementById('verFileName').textContent = file.name;
+  document.getElementById('verFileSize').textContent = '(' + (file.size / 1024).toFixed(0) + ' KB)';
+  document.getElementById('verWorkArea').style.display = 'block';
+  document.getElementById('verEmptyState').style.display = 'none';
+  document.getElementById('verStatsCard').style.display = 'none';
+  document.getElementById('verTableCard').style.display = 'none';
+
+  setVerLoading(false);
+}
+
+document.getElementById('resetVerBtn').addEventListener('click', () => {
+  verArrayBuffer = null;
+  fileInputVer.value = '';
+  document.getElementById('verWorkArea').style.display = 'none';
+  document.getElementById('verEmptyState').style.display = 'block';
+});
+
+function decodeQrFromPngBuffer(arrayBuffer) {
+  return new Promise((resolve) => {
+    const blob = new Blob([arrayBuffer], { type: 'image/png' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('hiddenCanvasHost');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const result = jsQR(imageData.data, imageData.width, imageData.height);
+      URL.revokeObjectURL(url);
+      resolve(result ? result.data : null);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
+// ---- Web Worker source: parse .xlsx + decode every QR off the main thread ----
+// Helper logic is duplicated here because a Worker has no access to the page's
+// functions. QR images are decoded with createImageBitmap + OffscreenCanvas
+// (DOM <img>/<canvas> are unavailable inside a Worker).
+const VERIFY_WORKER_SRC = `
+importScripts('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
+importScripts('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js');
+
+var QR_LABEL = 'QR Code';
+var POS_LABEL = 'ตำแหน่ง';
+var CHARS_PER_ROW = 40; // fallback; actual value comes from the posted message
+var ROWS_PER_QR = 4;
+
+function findLabelCol(ws, label, maxScanRows) {
+  maxScanRows = maxScanRows || 60;
+  var lastRow = Math.min(ws.rowCount, maxScanRows);
+  for (var r = 1; r <= lastRow; r++) {
+    var row = ws.getRow(r);
+    for (var c = 1; c <= ws.columnCount; c++) {
+      var v = row.getCell(c).value;
+      if (typeof v === 'string' && v.trim() === label) return c;
+    }
+  }
+  return null;
+}
+
+function findAllLabelOccurrences(ws, label, maxScanRows) {
+  maxScanRows = maxScanRows || 1000;
+  var out = [];
+  var lastRow = Math.min(ws.rowCount, maxScanRows);
+  for (var r = 1; r <= lastRow; r++) {
+    var row = ws.getRow(r);
+    for (var c = 1; c <= ws.columnCount; c++) {
+      var v = row.getCell(c).value;
+      if (typeof v === 'string' && v.trim() === label) out.push({ row: r, col: c });
+    }
+  }
+  return out;
+}
+
+function findPositionRange(ws) {
+  var occurrences = findAllLabelOccurrences(ws, POS_LABEL, 15);
+  for (var oi = 0; oi < occurrences.length; oi++) {
+    var occ = occurrences[oi];
+    var candidateRows = [occ.row, occ.row + 1];
+    for (var ri = 0; ri < candidateRows.length; ri++) {
+      var rr = candidateRows[ri];
+      var cStart = null;
+      var nums = [];
+      for (var c = 1; c <= ws.columnCount; c++) {
+        var v = ws.getRow(rr).getCell(c).value;
+        if (typeof v === 'number' && Math.round(v) === 1 && cStart === null) cStart = c;
+        if (cStart !== null && typeof v === 'number') nums.push(v);
+        else if (cStart !== null && typeof v !== 'number') break;
+      }
+      if (cStart !== null && nums.length >= 35) {
+        return { colStart: cStart, colEnd: cStart + nums.length - 1 };
+      }
+    }
+  }
+  return null;
+}
+
+function getMergesInCol(ws, colIdx) {
+  var merges = [];
+  var seen = {};
+  for (var key in ws._merges) {
+    var m = ws._merges[key];
+    var top = m.model.top, bottom = m.model.bottom, left = m.model.left, right = m.model.right;
+    if (left === colIdx && right === colIdx) {
+      var sig = top + '-' + bottom;
+      if (!seen[sig]) { seen[sig] = true; merges.push({ rowStart: top, rowEnd: bottom }); }
+    }
+  }
+  merges.sort(function (a, b) { return a.rowStart - b.rowStart; });
+  return merges;
+}
+
+// See cellValueToString in the main script for why this exists: ExcelJS
+// returns non-primitive objects for formula/rich-text/hyperlink/error
+// cells, and naive String(v) on those produced literal "[object Object]"
+// text instead of blank/actual content.
+function cellValueToString(v) {
+  if (v === null || v === undefined) return '';
+  var t = typeof v;
+  if (t === 'string' || t === 'number' || t === 'boolean') return String(v);
+  if (v instanceof Date) return v.toLocaleDateString('th-TH');
+  if (t === 'object') {
+    if (Array.isArray(v.richText)) {
+      var out = '';
+      for (var i = 0; i < v.richText.length; i++) out += (v.richText[i].text || '');
+      return out;
+    }
+    if (typeof v.text === 'string') return v.text;
+    if ('result' in v) {
+      var r = v.result;
+      if (r === null || r === undefined) return '';
+      if (typeof r === 'object') {
+        if (r instanceof Date) return r.toLocaleDateString('th-TH');
+        return '';
+      }
+      return String(r);
+    }
+    if (typeof v.error === 'string') return '';
+    return '';
+  }
+  return String(v);
+}
+
+function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow) {
+  charsPerRow = charsPerRow || CHARS_PER_ROW;
+  var full = '';
+  for (var r = rowStart; r <= rowEnd; r++) {
+    var chars = [];
+    for (var c = colStart; c <= colEnd; c++) {
+      var v = ws.getRow(r).getCell(c).value;
+      var s = cellValueToString(v);
+      chars.push(s === '' ? ' ' : s);
+    }
+    var rowStr = chars.join('');
+    if (rowStr.length < charsPerRow) rowStr = rowStr.padEnd(charsPerRow, ' ');
+    else rowStr = rowStr.substring(0, charsPerRow);
+    full += rowStr;
+  }
+  return full;
+}
+
+function stripTrailingSpaces(text) { return text.replace(/\\s+$/, ''); }
+
+async function decodeQr(buffer) {
+  try {
+    var blob = new Blob([buffer]);
+    var bitmap = await createImageBitmap(blob);
+    var canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0);
+    var imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+    var res = jsQR(imageData.data, imageData.width, imageData.height);
+    bitmap.close();
+    return res ? res.data : null;
+  } catch (e) { return null; }
+}
+
+self.onmessage = async function (e) {
+  try {
+    var arrayBuffer = e.data.arrayBuffer;
+    var msgCharsPerRow = e.data.charsPerRow || CHARS_PER_ROW;
+    var workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
+
+    var results = [];
+    var sheets = workbook.worksheets;
+    for (var si = 0; si < sheets.length; si++) {
+      var ws = sheets[si];
+      self.postMessage({ type: 'progress', pct: Math.round(si / sheets.length * 100),
+        text: 'กำลังตรวจสอบชีต: ' + ws.name + ' (' + (si + 1) + '/' + sheets.length + ')' });
+
+      var qrCol = findLabelCol(ws, QR_LABEL);
+      if (qrCol === null) continue;
+
+      var posRange = findPositionRange(ws);
+      var merges = getMergesInCol(ws, qrCol).filter(function (m) { return (m.rowEnd - m.rowStart + 1) === ROWS_PER_QR; });
+      if (merges.length === 0) continue;
+
+      var images = ws.getImages();
+      var imageByAnchor = {};
+      for (var ii = 0; ii < images.length; ii++) {
+        var imgRef = images[ii];
+        var akey = imgRef.range.tl.row + '_' + imgRef.range.tl.col;
+        imageByAnchor[akey] = workbook.model.media.find(function (m) { return m.index === imgRef.imageId; });
+      }
+
+      for (var mi = 0; mi < merges.length; mi++) {
+        var mc = merges[mi];
+        var rowStart = mc.rowStart, rowEnd = mc.rowEnd;
+        var expectedFull = posRange ? buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, msgCharsPerRow) : null;
+        var expectedPayload = expectedFull !== null ? stripTrailingSpaces(expectedFull) : null;
+
+        var key = (rowStart - 1) + '_' + (qrCol - 1);
+        var media = imageByAnchor[key];
+
+        var status, actual;
+        if (!media) { status = 'missing'; actual = null; }
+        else {
+          actual = await decodeQr(media.buffer);
+          if (actual === null) status = 'decode_failed';
+          else if (expectedPayload !== null && actual === expectedPayload) status = 'match';
+          else if (expectedPayload !== null) status = 'mismatch';
+          else status = 'no_expected_data';
+        }
+
+        results.push({ sheet: ws.name, rowStart: rowStart, rowEnd: rowEnd,
+          expected: expectedFull, expectedPayload: expectedPayload, actual: actual, status: status });
+      }
+      self.postMessage({ type: 'progress', pct: Math.round((si + 1) / sheets.length * 100), text: '' });
+    }
+    self.postMessage({ type: 'done', results: results });
+  } catch (err) {
+    self.postMessage({ type: 'error', message: (err && err.message) ? err.message : String(err) });
+  }
+};
+`;
+
+let verifyWorkerUrl = null;
+function createVerifyWorker() {
+  if (!verifyWorkerUrl) {
+    const blob = new Blob([VERIFY_WORKER_SRC], { type: 'application/javascript' });
+    verifyWorkerUrl = URL.createObjectURL(blob);
+  }
+  return new Worker(verifyWorkerUrl);
+}
+
+function runVerifyWithWorker(arrayBuffer, charsPerRow, onProgress) {
+  return new Promise((resolve, reject) => {
+    let worker;
+    try { worker = createVerifyWorker(); }
+    catch (e) { reject(e); return; }
+    worker.onmessage = (e) => {
+      const msg = e.data;
+      if (msg.type === 'progress') onProgress(msg.pct, msg.text);
+      else if (msg.type === 'done') { worker.terminate(); resolve(msg.results); }
+      else if (msg.type === 'error') { worker.terminate(); reject(new Error(msg.message)); }
+    };
+    worker.onerror = (e) => { worker.terminate(); reject(new Error(e.message || 'Worker error')); };
+    worker.postMessage({ arrayBuffer, charsPerRow });
+  });
+}
+
+async function runVerifyOnMainThread(arrayBuffer, charsPerRow, onProgress) {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(arrayBuffer);
+  await yieldToUI();
+
+  const results = [];
+  const sheets = workbook.worksheets;
+
+  for (let si = 0; si < sheets.length; si++) {
+    const ws = sheets[si];
+    onProgress(Math.round(si / sheets.length * 100), `กำลังตรวจสอบชีต: ${ws.name} (${si + 1}/${sheets.length})`);
+    await yieldToUI();
+
+    const qrCol = findLabelCol(ws, QR_LABEL);
+    if (qrCol === null) continue;
+
+    const posRange = findPositionRange(ws);
+    const merges = getMergesInCol(ws, qrCol).filter(m => (m.rowEnd - m.rowStart + 1) === ROWS_PER_QR);
+    if (merges.length === 0) continue;
+
+    const images = ws.getImages();
+    const imageByAnchor = {};
+    for (const imgRef of images) {
+      const key = imgRef.range.tl.row + '_' + imgRef.range.tl.col;
+      imageByAnchor[key] = workbook.model.media.find(m => m.index === imgRef.imageId);
+    }
+
+    let mergeCount = 0;
+    for (const mc of merges) {
+      const { rowStart, rowEnd } = mc;
+      const expectedFull = posRange
+        ? buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow)
+        : null;
+      const expectedPayload = expectedFull !== null ? stripTrailingSpaces(expectedFull) : null;
+
+      const key = (rowStart - 1) + '_' + (qrCol - 1);
+      const media = imageByAnchor[key];
+
+      let status, actual;
+      if (!media) {
+        status = 'missing';
+        actual = null;
+      } else {
+        actual = await decodeQrFromPngBuffer(media.buffer);
+        if (actual === null) status = 'decode_failed';
+        else if (expectedPayload !== null && actual === expectedPayload) status = 'match';
+        else if (expectedPayload !== null) status = 'mismatch';
+        else status = 'no_expected_data';
+      }
+
+      results.push({ sheet: ws.name, rowStart, rowEnd, expected: expectedFull, expectedPayload, actual, status });
+
+      mergeCount++;
+      if (mergeCount % 5 === 0) await yieldToUI();
+    }
+
+    onProgress(Math.round((si + 1) / sheets.length * 100), '');
+  }
+
+  return results;
+}
+
+document.getElementById('runVerBtn').addEventListener('click', async () => {
+  if (!verArrayBuffer) return;
+  if (!verPkgSelector.get()) {
+    alert('กรุณาเลือกประเภทบรรจุภัณฑ์ (Can / Pouch / Cup / อื่นๆ) ก่อนตรวจสอบ');
+    return;
+  }
+  const verCharsPerRow = PKG_TYPES[verPkgSelector.get()].chars;
+
+  const runBtn = document.getElementById('runVerBtn');
+  runBtn.disabled = true;
+  runBtn.textContent = 'กำลังตรวจสอบ...';
+
+  const bar = document.getElementById('verProgressBar');
+  document.getElementById('verProgressWrap').style.display = 'block';
+  bar.style.width = '0%';
+  const progLabel = document.getElementById('verProgressLabel');
+  progLabel.style.display = 'block';
+  progLabel.textContent = 'กำลังเปิดไฟล์ Excel...';
+
+  const onProgress = (pct, text) => {
+    if (typeof pct === 'number') bar.style.width = pct + '%';
+    if (text) progLabel.textContent = text;
+  };
+  await yieldToUI();
+
+  // Worker needs createImageBitmap + OffscreenCanvas to decode images.
+  const canUseWorker = typeof Worker !== 'undefined'
+    && typeof OffscreenCanvas !== 'undefined'
+    && typeof createImageBitmap === 'function';
+
+  try {
+    let results = null;
+
+    if (canUseWorker) {
+      try {
+        results = await runVerifyWithWorker(verArrayBuffer.slice(0), verCharsPerRow, onProgress);
+      } catch (workerErr) {
+        console.warn('Web Worker ใช้ไม่ได้ (อาจเปิดไฟล์แบบ file:// หรือโหลด CDN ไม่ได้) — สลับไปประมวลผลบนหน้าหลัก', workerErr);
+        results = null;
+      }
+    }
+
+    if (results === null) {
+      progLabel.textContent = 'กำลังตรวจสอบ (โหมดสำรอง)...';
+      await yieldToUI();
+      results = await runVerifyOnMainThread(verArrayBuffer.slice(0), verCharsPerRow, onProgress);
+    }
+
+    bar.style.width = '100%';
+    progLabel.style.display = 'none';
+    renderVerifyResults(results);
+
+  } catch (err) {
+    if (/central directory|zip file/i.test(err.message || '')) {
+      alert('ไฟล์นี้ไม่ใช่ไฟล์ .xlsx ที่สมบูรณ์ (เปิดเป็น ZIP ไม่ได้) กรุณาตรวจสอบว่าไฟล์อัพโหลดสำเร็จครบถ้วน แล้วลองใหม่อีกครั้ง');
+    } else {
+      alert('เกิดข้อผิดพลาด: ' + err.message);
+    }
+    console.error(err);
+  } finally {
+    runBtn.disabled = false;
+    runBtn.textContent = 'ตรวจสอบ QR Code ทั้งหมด';
+  }
+});
+
+function renderVerifyResults(results) {
+  const total = results.length;
+  const matched = results.filter(r => r.status === 'match').length;
+  const mismatched = results.filter(r => r.status === 'mismatch').length;
+  const missing = results.filter(r => r.status === 'missing').length;
+  const failed = results.filter(r => r.status === 'decode_failed').length;
+
+  document.getElementById('verStatsBar').innerHTML = `
+    <div class="stat"><b>${total}</b>QR ทั้งหมด</div>
+    <div class="stat"><b>${matched}</b>ตรงกัน</div>
+    <div class="stat ${mismatched > 0 ? 'bad' : ''}"><b>${mismatched}</b>ข้อมูลไม่ตรง</div>
+    <div class="stat ${missing > 0 ? 'bad' : ''}"><b>${missing}</b>ไม่พบรูป QR</div>
+    <div class="stat ${failed > 0 ? 'bad' : ''}"><b>${failed}</b>อ่าน QR ไม่ได้</div>
+  `;
+  document.getElementById('verStatsCard').style.display = 'block';
+
+  const badgeMap = {
+    match: '<span class="badge badge-ok">ตรงกัน</span>',
+    mismatch: '<span class="badge badge-err">ไม่ตรงกัน</span>',
+    missing: '<span class="badge badge-warn">ไม่พบรูป QR</span>',
+    decode_failed: '<span class="badge badge-err">อ่าน QR ไม่ได้</span>',
+    no_expected_data: '<span class="badge badge-warn">ไม่พบข้อมูลอ้างอิง</span>'
+  };
+
+  const tbody = document.getElementById('verTableBody');
+  if (results.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px;">ไม่พบ QR Code ในไฟล์นี้</td></tr>`;
+  } else {
+    tbody.innerHTML = results.map(r => `
+      <tr>
+        <td>${escapeHtml(r.sheet)}</td>
+        <td class="mono">${r.rowStart}-${r.rowEnd}</td>
+        <td>${badgeMap[r.status] || r.status}</td>
+        <td class="mono">${escapeHtml(r.expected)}</td>
+        <td class="mono">${escapeHtml(r.actual)}</td>
+      </tr>
+    `).join('');
+  }
+  document.getElementById('verTableCard').style.display = 'block';
+
+  // Full-screen FAIL alert with loud alarm sound if any mismatch was found.
+  if (mismatched > 0) {
+    showFailAlert(`พบข้อมูล QR Code ไม่ตรงกัน ${mismatched} จุด`, 2000);
+  }
+}
+</script>
+</body>
+</html>
