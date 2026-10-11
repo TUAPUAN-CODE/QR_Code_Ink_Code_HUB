@@ -2,11 +2,12 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QR Code Tool — ใบแจ้งพิมพ์รหัสผลิตภัณฑ์</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="/vendor/exceljs.min.js"></script>
+<script src="/vendor/qrcode.js"></script>
+<script src="/vendor/jsQR.js"></script>
 <style>
   :root {
     --bg1: #eef2f7;
@@ -1197,8 +1198,8 @@ function decodeQrFromPngBuffer(arrayBuffer) {
 // functions. QR images are decoded with createImageBitmap + OffscreenCanvas
 // (DOM <img>/<canvas> are unavailable inside a Worker).
 const VERIFY_WORKER_SRC = `
-importScripts('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
-importScripts('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js');
+importScripts('${location.origin}/vendor/exceljs.min.js');
+importScripts('${location.origin}/vendor/jsQR.js');
 
 var QR_LABEL = 'QR Code';
 var POS_LABEL = 'ตำแหน่ง';

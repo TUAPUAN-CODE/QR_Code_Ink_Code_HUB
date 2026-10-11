@@ -1,12 +1,18 @@
 {
-  "name": "qr-code-tool-server",
-  "version": "1.0.0",
-  "description": "Local Express server for QR Code Tool",
+  "name": "qr-code-ink-hub",
+  "version": "1.1.0",
+  "private": true,
+  "description": "QR Code Tool — ใบแจ้งพิมพ์รหัสผลิตภัณฑ์",
+  "license": "UNLICENSED",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
+  "engines": {
+    "node": ">=18"
   },
-  "dependencies": {
-    "express": "^4.19.2"
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/server.test.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:reload": "pm2 reload qr-code-ink-hub",
+    "pm2:logs": "pm2 logs qr-code-ink-hub"
   }
 }

@@ -1,0 +1,11 @@
+node_modules/
+logs/*
+!logs/.gitkeep
+.env
+.env.*
+!.env.example
+*.log
+NUL
+Thumbs.db
+.DS_Store
+bundle-analysis.html
