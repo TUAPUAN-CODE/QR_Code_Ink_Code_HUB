@@ -260,8 +260,10 @@
     <div class="note">
       ข้อมูล QR สร้างจากช่วงคอลัมน์ใต้หัว "ตำแหน่ง" (เช่น E:AR หรือ G:AT แล้วแต่ชีต) 4 แถวต่อ 1 QR
       จำนวนตัวอักษรต่อแถวขึ้นกับประเภทบรรจุภัณฑ์ที่เลือกด้านล่าง (Can = 23 ตัวอักษร/แถว,
-      Pouch/Cup/อื่นๆ = 40 ตัวอักษร/แถว เหมือนเดิม) เติมช่องว่างให้ครบเสมอ รวม 4 แถว = ข้อมูลอ้างอิง
+      Pouch/อื่นๆ = 40 ตัวอักษร/แถว เหมือนเดิม) เติมช่องว่างให้ครบเสมอ รวม 4 แถว = ข้อมูลอ้างอิง
       (ตัด space ต่อท้ายออกก่อนสร้างเป็น QR จริง เพื่อให้สแกนด้วยมือถือได้ง่ายขึ้น)
+      — <b>Cup</b> ใช้ข้อมูลจริงของแต่ละแถวต่อกันเลย ไม่เติมช่องว่างให้ครบ 40 ตัวอักษร
+      (ตัดช่องว่างท้ายแต่ละแถวออก, ช่องว่างหน้า/กลางแถวคงไว้ตามตำแหน่ง, สูงสุด 40 ตัวอักษร/แถว)
       เลือกประเภทบรรจุภัณฑ์แล้วอัพโหลดไฟล์ ระบบจะสร้าง QR Code ให้ทันทีในทุกชีตที่พบ label "QR Code" โดยอัตโนมัติ
       ขนาด QR จะปรับ (auto) ตามความยาวข้อมูลจริงในแต่ละบล็อกโดยอัตโนมัติ
     </div>
@@ -276,8 +278,13 @@
         </button>
         <button type="button" class="pkg-btn" id="genPkgBtnOther" data-pkg="other">
           <span class="pkg-icon">📦</span>
-          <span class="pkg-label">Pouch / Cup / อื่นๆ</span>
+          <span class="pkg-label">Pouch / อื่นๆ</span>
           <span class="pkg-sub">40 หลัก / แถว</span>
+        </button>
+        <button type="button" class="pkg-btn" id="genPkgBtnCup" data-pkg="cup">
+          <span class="pkg-icon">🥤</span>
+          <span class="pkg-label">Cup</span>
+          <span class="pkg-sub">ข้อมูลจริง ไม่เติมช่องว่าง</span>
         </button>
       </div>
       <div class="pkg-status unselected" id="genPkgStatus">⚠️ กรุณาเลือกประเภทบรรจุภัณฑ์ก่อนอัพโหลดไฟล์</div>
@@ -331,7 +338,8 @@
     <div class="note">
       อัพโหลดไฟล์ที่มีรูป QR Code ฝังอยู่แล้ว ระบบจะอ่าน (decode) รูป QR แต่ละรูป
       แล้วเทียบกับข้อมูลที่ควรจะเป็นจากคอลัมน์ "ตำแหน่ง" ในแถวเดียวกัน (23 ตัวอักษร/แถวสำหรับ Can,
-      40 ตัวอักษร/แถวสำหรับ Pouch/Cup/อื่นๆ — เลือกประเภทให้ตรงกับตอนสร้าง QR)
+      40 ตัวอักษร/แถวสำหรับ Pouch/อื่นๆ, ข้อมูลจริงไม่เติมช่องว่างสำหรับ Cup — เลือกประเภทให้ตรงกับตอนสร้าง QR;
+      ไฟล์ Cup ที่สร้างก่อนแยกปุ่ม Cup ให้ตรวจด้วย "Pouch / อื่นๆ")
       เพื่อตรวจว่าข้อมูลตรงกันหรือไม่ รองรับทั้งไฟล์หลายชีตและชีตเดียว ไฟล์ขนาดใหญ่อาจใช้เวลาสักครู่
       — กรุณารอให้แถบสถานะทำงานจนเสร็จ โดยไม่ต้องรีเฟรชหน้าจอ
     </div>
@@ -346,8 +354,13 @@
         </button>
         <button type="button" class="pkg-btn" id="verPkgBtnOther" data-pkg="other">
           <span class="pkg-icon">📦</span>
-          <span class="pkg-label">Pouch / Cup / อื่นๆ</span>
+          <span class="pkg-label">Pouch / อื่นๆ</span>
           <span class="pkg-sub">40 หลัก / แถว</span>
+        </button>
+        <button type="button" class="pkg-btn" id="verPkgBtnCup" data-pkg="cup">
+          <span class="pkg-icon">🥤</span>
+          <span class="pkg-label">Cup</span>
+          <span class="pkg-sub">ข้อมูลจริง ไม่เติมช่องว่าง</span>
         </button>
       </div>
       <div class="pkg-status unselected" id="verPkgStatus">⚠️ กรุณาเลือกประเภทบรรจุภัณฑ์ก่อนอัพโหลดไฟล์</div>
@@ -425,29 +438,31 @@
 // ============================================================
 const QR_LABEL = 'QR Code';
 const POS_LABEL = 'ตำแหน่ง';
-const CHARS_PER_ROW = 40; // default / fallback (Pouch, Cup, other)
+const CHARS_PER_ROW = 40; // default / fallback (Pouch, other)
 const ROWS_PER_QR = 4;
 
 // Package type -> characters per row. Can uses a shorter 23-digit row;
-// everything else (Pouch, Cup, etc.) keeps the original 40-digit row.
+// Pouch/other keep the original 40-digit row padded with spaces.
+// Cup uses each row's real data as-is (trailing blanks dropped, no padding
+// up to 40) and joins the rows directly; rows are still capped at 40.
 const PKG_TYPES = {
-  can:   { label: 'Can',                 chars: 23 },
-  other: { label: 'Pouch / Cup / อื่นๆ', chars: 40 }
+  can:   { label: 'Can',           chars: 23, pad: true,  desc: '23 หลัก/แถว' },
+  other: { label: 'Pouch / อื่นๆ', chars: 40, pad: true,  desc: '40 หลัก/แถว' },
+  cup:   { label: 'Cup',           chars: 40, pad: false, desc: 'ข้อมูลจริง ไม่เติมช่องว่าง' }
 };
 
 // ---- Package type selector wiring (shared helper, used by both tabs) ----
 function wirePkgSelector(prefix, onChange) {
-  const btnCan = document.getElementById(prefix + 'PkgBtnCan');
-  const btnOther = document.getElementById(prefix + 'PkgBtnOther');
+  const panel = document.getElementById(prefix === 'gen' ? 'panel-generate' : 'panel-verify');
+  const buttons = panel.querySelectorAll('.pkg-btn');
   const statusEl = document.getElementById(prefix + 'PkgStatus');
   const dropzone = document.getElementById('dropzone' + (prefix === 'gen' ? 'Gen' : 'Ver'));
   let selected = null;
 
   function apply() {
-    btnCan.classList.toggle('active', selected === 'can');
-    btnOther.classList.toggle('active', selected === 'other');
+    buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.pkg === selected));
     if (selected) {
-      statusEl.textContent = '✅ เลือกแล้ว: ' + PKG_TYPES[selected].label + ' (' + PKG_TYPES[selected].chars + ' หลัก/แถว)';
+      statusEl.textContent = '✅ เลือกแล้ว: ' + PKG_TYPES[selected].label + ' (' + PKG_TYPES[selected].desc + ')';
       statusEl.className = 'pkg-status selected';
       dropzone.classList.remove('locked');
     } else {
@@ -458,8 +473,7 @@ function wirePkgSelector(prefix, onChange) {
     if (onChange) onChange(selected);
   }
 
-  btnCan.addEventListener('click', () => { selected = 'can'; apply(); });
-  btnOther.addEventListener('click', () => { selected = 'other'; apply(); });
+  buttons.forEach(btn => btn.addEventListener('click', () => { selected = btn.dataset.pkg; apply(); }));
   apply();
 
   return { get: () => selected };
@@ -631,24 +645,13 @@ function getMergesInCol(ws, colIdx) {
   return merges;
 }
 
-function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = CHARS_PER_ROW) {
-  let full = '';
-  for (let r = rowStart; r <= rowEnd; r++) {
-    let chars = [];
-    for (let c = colStart; c <= colEnd; c++) {
-      const v = ws.getRow(r).getCell(c).value;
-      const s = cellValueToString(v);
-      chars.push(s === '' ? ' ' : s);
-    }
-    let rowStr = chars.join('');
-    if (rowStr.length < charsPerRow) rowStr = rowStr.padEnd(charsPerRow, ' ');
-    else rowStr = rowStr.substring(0, charsPerRow);
-    full += rowStr;
-  }
-  return full;
+// padRows = true  -> every row is padded with spaces up to charsPerRow (Can, Pouch, other)
+// padRows = false -> Cup: each row keeps only its real data (trailing blanks dropped)
+function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = CHARS_PER_ROW, padRows = true) {
+  return buildQrRowsArray(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow, padRows).join('');
 }
 
-function buildQrRowsArray(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = CHARS_PER_ROW) {
+function buildQrRowsArray(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = CHARS_PER_ROW, padRows = true) {
   const rows = [];
   for (let r = rowStart; r <= rowEnd; r++) {
     let chars = [];
@@ -657,9 +660,8 @@ function buildQrRowsArray(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = 
       const s = cellValueToString(v);
       chars.push(s === '' ? ' ' : s);
     }
-    let rowStr = chars.join('');
-    if (rowStr.length < charsPerRow) rowStr = rowStr.padEnd(charsPerRow, ' ');
-    else rowStr = rowStr.substring(0, charsPerRow);
+    let rowStr = chars.join('').substring(0, charsPerRow);
+    rowStr = padRows ? rowStr.padEnd(charsPerRow, ' ') : stripTrailingSpaces(rowStr);
     rows.push(rowStr);
   }
   return rows;
@@ -932,6 +934,7 @@ async function runGeneration(arrayBuffer) {
   const pkgKey = genPkgSelector.get() || 'other';
   const pkgInfo = PKG_TYPES[pkgKey];
   const charsPerRow = pkgInfo.chars;
+  const padRows = pkgInfo.pad;
 
   document.getElementById('genProgressWrap').style.display = 'block';
   document.getElementById('genProgressBar').style.width = '0%';
@@ -986,10 +989,10 @@ async function runGeneration(arrayBuffer) {
       const span = rowEnd - rowStart + 1;
       if (span !== ROWS_PER_QR) { totalSkipped++; continue; }
 
-      const qrText = buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow);
+      const qrText = buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow, padRows);
       if (qrText.trim() === '') { totalSkipped++; continue; }
       const qrPayload = stripTrailingSpaces(qrText);
-      const qrRows = buildQrRowsArray(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow);
+      const qrRows = buildQrRowsArray(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow, padRows);
 
       const formulaCode = cellText(ws, rowStart, hcols.formulaCode);
       const lineCode = cellText(ws, rowStart, hcols.lineCode);
@@ -1027,7 +1030,7 @@ async function runGeneration(arrayBuffer) {
         rowStart, rowEnd,
         rows: qrRows,
         pkgLabel: pkgInfo.label,
-        charsPerRow
+        pkgDesc: pkgInfo.desc
       });
 
       await yieldToUI();
@@ -1048,7 +1051,7 @@ async function runGeneration(arrayBuffer) {
     <div class="stat"><b>${totalInserted}</b>QR Code ที่สร้างสำเร็จ</div>
     <div class="stat ${totalSkipped > 0 ? 'bad' : ''}"><b>${totalSkipped}</b>บล็อกที่ข้าม</div>
     <div class="stat"><b>${totalSheetsTouched}</b>ชีตที่แก้ไข</div>
-    <div class="stat"><b>${charsPerRow} หลัก/แถว</b>${escapeHtml(pkgInfo.label)}</div>
+    <div class="stat"><b>${escapeHtml(pkgInfo.desc)}</b>${escapeHtml(pkgInfo.label)}</div>
     <div class="stat"><b>${(genResultBlob.size / 1024 / 1024).toFixed(2)} MB</b>ขนาดไฟล์</div>
   `;
   document.getElementById('genStatsCard').style.display = 'block';
@@ -1090,7 +1093,7 @@ function renderGenSummary(summary) {
           <div><div class="lbl">รหัสเอกสารระบบ Code</div><div class="val">${escapeHtml(s.lineCode || '-')}</div></div>
           <div><div class="lbl">ลูกค้า</div><div class="val">${escapeHtml(s.customer || '-')}</div></div>
           <div><div class="lbl">ชนิด</div><div class="val">${escapeHtml(s.type || '-')}</div></div>
-          <div><div class="lbl">ประเภทบรรจุภัณฑ์ที่เลือก</div><div class="val">${escapeHtml(s.pkgLabel)} (${s.charsPerRow} หลัก/แถว)</div></div>
+          <div><div class="lbl">ประเภทบรรจุภัณฑ์ที่เลือก</div><div class="val">${escapeHtml(s.pkgLabel)} (${escapeHtml(s.pkgDesc)})</div></div>
         </div>
         <div class="sb-rows">${s.rows.map((r, i) => `แถว ${s.rowStart + i}: ${escapeHtml(r)}`).join('<br>')}</div>
       </div>
@@ -1302,7 +1305,8 @@ function cellValueToString(v) {
   return String(v);
 }
 
-function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow) {
+// padRows === false -> Cup: real data per row, no space padding (see main script)
+function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow, padRows) {
   charsPerRow = charsPerRow || CHARS_PER_ROW;
   var full = '';
   for (var r = rowStart; r <= rowEnd; r++) {
@@ -1312,9 +1316,8 @@ function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow
       var s = cellValueToString(v);
       chars.push(s === '' ? ' ' : s);
     }
-    var rowStr = chars.join('');
-    if (rowStr.length < charsPerRow) rowStr = rowStr.padEnd(charsPerRow, ' ');
-    else rowStr = rowStr.substring(0, charsPerRow);
+    var rowStr = chars.join('').substring(0, charsPerRow);
+    rowStr = padRows === false ? stripTrailingSpaces(rowStr) : rowStr.padEnd(charsPerRow, ' ');
     full += rowStr;
   }
   return full;
@@ -1340,6 +1343,7 @@ self.onmessage = async function (e) {
   try {
     var arrayBuffer = e.data.arrayBuffer;
     var msgCharsPerRow = e.data.charsPerRow || CHARS_PER_ROW;
+    var msgPadRows = e.data.padRows !== false;
     var workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(arrayBuffer);
 
@@ -1368,7 +1372,7 @@ self.onmessage = async function (e) {
       for (var mi = 0; mi < merges.length; mi++) {
         var mc = merges[mi];
         var rowStart = mc.rowStart, rowEnd = mc.rowEnd;
-        var expectedFull = posRange ? buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, msgCharsPerRow) : null;
+        var expectedFull = posRange ? buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, msgCharsPerRow, msgPadRows) : null;
         var expectedPayload = expectedFull !== null ? stripTrailingSpaces(expectedFull) : null;
 
         var key = (rowStart - 1) + '_' + (qrCol - 1);
@@ -1405,7 +1409,7 @@ function createVerifyWorker() {
   return new Worker(verifyWorkerUrl);
 }
 
-function runVerifyWithWorker(arrayBuffer, charsPerRow, onProgress) {
+function runVerifyWithWorker(arrayBuffer, charsPerRow, padRows, onProgress) {
   return new Promise((resolve, reject) => {
     let worker;
     try { worker = createVerifyWorker(); }
@@ -1417,11 +1421,11 @@ function runVerifyWithWorker(arrayBuffer, charsPerRow, onProgress) {
       else if (msg.type === 'error') { worker.terminate(); reject(new Error(msg.message)); }
     };
     worker.onerror = (e) => { worker.terminate(); reject(new Error(e.message || 'Worker error')); };
-    worker.postMessage({ arrayBuffer, charsPerRow });
+    worker.postMessage({ arrayBuffer, charsPerRow, padRows });
   });
 }
 
-async function runVerifyOnMainThread(arrayBuffer, charsPerRow, onProgress) {
+async function runVerifyOnMainThread(arrayBuffer, charsPerRow, padRows, onProgress) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(arrayBuffer);
   await yieldToUI();
@@ -1452,7 +1456,7 @@ async function runVerifyOnMainThread(arrayBuffer, charsPerRow, onProgress) {
     for (const mc of merges) {
       const { rowStart, rowEnd } = mc;
       const expectedFull = posRange
-        ? buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow)
+        ? buildQrTextFromRows(ws, rowStart, rowEnd, posRange.colStart, posRange.colEnd, charsPerRow, padRows)
         : null;
       const expectedPayload = expectedFull !== null ? stripTrailingSpaces(expectedFull) : null;
 
@@ -1490,6 +1494,7 @@ document.getElementById('runVerBtn').addEventListener('click', async () => {
     return;
   }
   const verCharsPerRow = PKG_TYPES[verPkgSelector.get()].chars;
+  const verPadRows = PKG_TYPES[verPkgSelector.get()].pad;
 
   const runBtn = document.getElementById('runVerBtn');
   runBtn.disabled = true;
@@ -1518,7 +1523,7 @@ document.getElementById('runVerBtn').addEventListener('click', async () => {
 
     if (canUseWorker) {
       try {
-        results = await runVerifyWithWorker(verArrayBuffer.slice(0), verCharsPerRow, onProgress);
+        results = await runVerifyWithWorker(verArrayBuffer.slice(0), verCharsPerRow, verPadRows, onProgress);
       } catch (workerErr) {
         console.warn('Web Worker ใช้ไม่ได้ (อาจเปิดไฟล์แบบ file:// หรือโหลด CDN ไม่ได้) — สลับไปประมวลผลบนหน้าหลัก', workerErr);
         results = null;
@@ -1528,7 +1533,7 @@ document.getElementById('runVerBtn').addEventListener('click', async () => {
     if (results === null) {
       progLabel.textContent = 'กำลังตรวจสอบ (โหมดสำรอง)...';
       await yieldToUI();
-      results = await runVerifyOnMainThread(verArrayBuffer.slice(0), verCharsPerRow, onProgress);
+      results = await runVerifyOnMainThread(verArrayBuffer.slice(0), verCharsPerRow, verPadRows, onProgress);
     }
 
     bar.style.width = '100%';
