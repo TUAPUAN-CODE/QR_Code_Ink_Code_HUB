@@ -262,7 +262,7 @@
       จำนวนตัวอักษรต่อแถวขึ้นกับประเภทบรรจุภัณฑ์ที่เลือกด้านล่าง (Can = 23 ตัวอักษร/แถว,
       Pouch/อื่นๆ = 40 ตัวอักษร/แถว เหมือนเดิม) เติมช่องว่างให้ครบเสมอ รวม 4 แถว = ข้อมูลอ้างอิง
       (ตัด space ต่อท้ายออกก่อนสร้างเป็น QR จริง เพื่อให้สแกนด้วยมือถือได้ง่ายขึ้น)
-      — <b>Cup</b> ใช้ข้อมูลจริงของแต่ละแถวต่อกันเลย ไม่เติมช่องว่างให้ครบ 40 ตัวอักษร
+      — <b>Cup</b> ใช้ข้อมูลจริงของแต่ละแถวต่อกันเลย ไม่เติมช่องว่างให้ครบ 40 ตัวอักษร และไม่เอาเวลา (HH:MM / HHMM) ไปใส่ใน QR
       (ตัดช่องว่างท้ายแต่ละแถวออก, ช่องว่างหน้า/กลางแถวคงไว้ตามตำแหน่ง, สูงสุด 40 ตัวอักษร/แถว)
       เลือกประเภทบรรจุภัณฑ์แล้วอัพโหลดไฟล์ ระบบจะสร้าง QR Code ให้ทันทีในทุกชีตที่พบ label "QR Code" โดยอัตโนมัติ
       ขนาด QR จะปรับ (auto) ตามความยาวข้อมูลจริงในแต่ละบล็อกโดยอัตโนมัติ
@@ -645,6 +645,20 @@ function getMergesInCol(ws, colIdx) {
   return merges;
 }
 
+// Cup only: drop time values (HH:MM, HH:MM:SS, HHMM, or a time-formatted cell) from the QR text —
+// the ink printer inserts the time itself via its own "time" message data type.
+// Returns null when the whole cell is a time (cell is skipped, neighbours join directly).
+// (No backslashes on purpose: the worker copy below lives inside a string.)
+function dropTimeForCup(v, s) {
+  if (v instanceof Date && v.getFullYear() < 1901) return null;
+  var t = s.trim();
+  if (t === '') return s;
+  if (/^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/.test(t)) return null;
+  if (/^([01][0-9]|2[0-3])[0-5][0-9]$/.test(t)) return null;
+  var out = s.replace(/(^|[^0-9])([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?(?![0-9])/g, '$1');
+  return out.trim() === '' ? null : out;
+}
+
 // padRows = true  -> every row is padded with spaces up to charsPerRow (Can, Pouch, other)
 // padRows = false -> Cup: each row keeps only its real data (trailing blanks dropped)
 function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = CHARS_PER_ROW, padRows = true) {
@@ -657,7 +671,8 @@ function buildQrRowsArray(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = 
     let chars = [];
     for (let c = colStart; c <= colEnd; c++) {
       const v = ws.getRow(r).getCell(c).value;
-      const s = cellValueToString(v);
+      let s = cellValueToString(v);
+      if (!padRows) { s = dropTimeForCup(v, s); if (s === null) continue; }
       chars.push(s === '' ? ' ' : s);
     }
     let rowStr = chars.join('').substring(0, charsPerRow);
@@ -1305,6 +1320,17 @@ function cellValueToString(v) {
   return String(v);
 }
 
+// Cup only: drop time values (HH:MM / HHMM) — same logic as dropTimeForCup in the main script
+function dropTimeForCup(v, s) {
+  if (v instanceof Date && v.getFullYear() < 1901) return null;
+  var t = s.trim();
+  if (t === '') return s;
+  if (/^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/.test(t)) return null;
+  if (/^([01][0-9]|2[0-3])[0-5][0-9]$/.test(t)) return null;
+  var out = s.replace(/(^|[^0-9])([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?(?![0-9])/g, '$1');
+  return out.trim() === '' ? null : out;
+}
+
 // padRows === false -> Cup: real data per row, no space padding (see main script)
 function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow, padRows) {
   charsPerRow = charsPerRow || CHARS_PER_ROW;
@@ -1314,6 +1340,7 @@ function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow
     for (var c = colStart; c <= colEnd; c++) {
       var v = ws.getRow(r).getCell(c).value;
       var s = cellValueToString(v);
+      if (padRows === false) { s = dropTimeForCup(v, s); if (s === null) continue; }
       chars.push(s === '' ? ' ' : s);
     }
     var rowStr = chars.join('').substring(0, charsPerRow);
