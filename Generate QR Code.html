@@ -264,7 +264,7 @@
       (ตัด space ต่อท้ายออกก่อนสร้างเป็น QR จริง เพื่อให้สแกนด้วยมือถือได้ง่ายขึ้น)
       — <b>Cup</b> ใช้ข้อมูลจริงของแต่ละแถวต่อกันเลย ไม่เติมช่องว่างให้ครบ 40 ตัวอักษร และไม่เอาข้อความ HH:MM / HHMM ไปใส่ใน QR
       (ตัดช่องว่างท้ายแต่ละแถวออก, ช่องว่างหน้า/กลางแถวคงไว้ตามตำแหน่ง, สูงสุด 40 ตัวอักษร/แถว)
-      — <b>Pouch Sachet</b> 40 ตัวอักษร/แถว ใช้ข้อมูลจริงของแต่ละแถว (ไม่เติมช่องว่าง) และขึ้นบรรทัดใหม่ระหว่างแถวใน QR
+      — <b>Pouch Sachet</b> 40 ตัวอักษร/แถว ใช้ข้อมูลจริงของแต่ละแถว (ไม่เติมช่องว่าง) ขึ้นบรรทัดใหม่ระหว่างแถวใน QR และไม่เอาข้อความ HH:MM / HHMM ไปใส่ใน QR (เหมือน Cup — ข้อมูลในตาราง Excel ไม่ถูกแก้)
       เลือกประเภทบรรจุภัณฑ์แล้วอัพโหลดไฟล์ ระบบจะสร้าง QR Code ให้ทันทีในทุกชีตที่พบ label "QR Code" โดยอัตโนมัติ
       ขนาด QR จะปรับ (auto) ตามความยาวข้อมูลจริงในแต่ละบล็อกโดยอัตโนมัติ
     </div>
@@ -460,8 +460,9 @@ const PKG_TYPES = {
   can:    { label: 'Can',           chars: 23, pad: true,  dropTime: false, sep: '',   desc: '23 หลัก/แถว' },
   other:  { label: 'Pouch / อื่นๆ', chars: 40, pad: true,  dropTime: false, sep: '',   desc: '40 หลัก/แถว' },
   cup:    { label: 'Cup',           chars: 40, pad: false, dropTime: true,  sep: '',   desc: 'ข้อมูลจริง ไม่เติมช่องว่าง' },
-  // Pouch Sachet: 40 digits/row, each row's real data (no padding) and a newline between rows
-  sachet: { label: 'Pouch Sachet',  chars: 40, pad: false, dropTime: false, sep: '\n', desc: '40 หลัก/แถว ขึ้นบรรทัดใหม่ทุกแถว' }
+  // Pouch Sachet: 40 digits/row, each row's real data (no padding), a newline between rows,
+  // and the "HH:MM" / "HHMM" placeholders are dropped from the QR text (same as Cup)
+  sachet: { label: 'Pouch Sachet',  chars: 40, pad: false, dropTime: true,  sep: '\n', desc: '40 หลัก/แถว ขึ้นบรรทัดใหม่ทุกแถว ไม่เอา HH:MM / HHMM' }
 };
 // Formatting options handed to buildQrTextFromRows / buildQrRowsArray (and to the verify worker)
 function pkgFormat(key) {
@@ -663,7 +664,7 @@ function getMergesInCol(ws, colIdx) {
   return merges;
 }
 
-// Cup only: drop the literal placeholder text "HH:MM" and "HHMM" from the QR text —
+// Cup and Pouch Sachet: drop the literal placeholder text "HH:MM" and "HHMM" from the QR text —
 // the ink printer inserts the real time itself via its own "time" message data type.
 // Real numbers (e.g. 1430) are left untouched. Returns null when the whole cell is just
 // a placeholder (cell is skipped, neighbours join directly).
