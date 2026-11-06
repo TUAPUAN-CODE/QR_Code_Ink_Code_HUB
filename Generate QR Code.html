@@ -695,7 +695,12 @@ function buildQrRowsArray(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow = 
       if (fmt.dropTime) { s = dropTimeForCup(v, s); if (s === null) continue; }
       chars.push(s === '' ? ' ' : s);
     }
-    let rowStr = chars.join('').substring(0, charsPerRow);
+    let joined = chars.join('');
+    // Also strip the placeholder from the joined row: when the template spreads the text
+    // over several cells (one character per cell, e.g. H|H|M|M) the per-cell check above
+    // cannot see it.
+    if (fmt.dropTime) joined = joined.split('HH:MM').join('').split('HHMM').join('');
+    let rowStr = joined.substring(0, charsPerRow);
     rowStr = fmt.pad ? rowStr.padEnd(charsPerRow, ' ') : stripTrailingSpaces(rowStr);
     rows.push(rowStr);
   }
@@ -1359,7 +1364,9 @@ function buildQrTextFromRows(ws, rowStart, rowEnd, colStart, colEnd, charsPerRow
       if (fmt.dropTime) { s = dropTimeForCup(v, s); if (s === null) continue; }
       chars.push(s === '' ? ' ' : s);
     }
-    var rowStr = chars.join('').substring(0, charsPerRow);
+    var joined = chars.join('');
+    if (fmt.dropTime) joined = joined.split('HH:MM').join('').split('HHMM').join('');
+    var rowStr = joined.substring(0, charsPerRow);
     rowStr = fmt.pad ? rowStr.padEnd(charsPerRow, ' ') : stripTrailingSpaces(rowStr);
     full += (r > rowStart ? fmt.sep : '') + rowStr;
   }
