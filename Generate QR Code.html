@@ -460,9 +460,11 @@ const PKG_TYPES = {
   can:    { label: 'Can',           chars: 23, pad: true,  dropTime: false, sep: '',   desc: '23 หลัก/แถว' },
   other:  { label: 'Pouch / อื่นๆ', chars: 40, pad: true,  dropTime: false, sep: '',   desc: '40 หลัก/แถว' },
   cup:    { label: 'Cup',           chars: 40, pad: false, dropTime: true,  sep: '',   desc: 'ข้อมูลจริง ไม่เติมช่องว่าง' },
-  // Pouch Sachet: 40 digits/row, each row's real data (no padding), a newline between rows,
+  // Pouch Sachet: 40 digits/row, each row's real data (no padding), CR+LF between rows
+  // (a bare LF is swallowed by the Honeywell keyboard-wedge scanner, so rows ran together;
+  // CR / CR+LF were tested to produce real new lines),
   // and the "HH:MM" / "HHMM" placeholders are dropped from the QR text (same as Cup)
-  sachet: { label: 'Pouch Sachet',  chars: 40, pad: false, dropTime: true,  sep: '\n', desc: '40 หลัก/แถว ขึ้นบรรทัดใหม่ทุกแถว ไม่เอา HH:MM / HHMM' }
+  sachet: { label: 'Pouch Sachet',  chars: 40, pad: false, dropTime: true,  sep: '\r\n', desc: '40 หลัก/แถว ขึ้นบรรทัดใหม่ทุกแถว ไม่เอา HH:MM / HHMM' }
 };
 // Formatting options handed to buildQrTextFromRows / buildQrRowsArray (and to the verify worker)
 function pkgFormat(key) {
